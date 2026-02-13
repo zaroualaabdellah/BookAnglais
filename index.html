@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Recipe Cookbook</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-green: #1a3d2e;
+            --bg-green-light: #234b3a;
+            --gold: #d4af37;
+            --gold-light: #e8c547;
+            --gold-dark: #b8960c;
+            --text-cream: #f5f0e1;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            background: linear-gradient(135deg, #2d4a3e 0%, #1a3d2e 100%);
+            color: var(--gold);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, #0f291e 0%, #1a3d2e 100%);
+            color: var(--gold);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--gold);
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.95rem;
+            color: var(--text-cream);
+        }
+
+        .header-stats span {
+            opacity: 0.9;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: linear-gradient(180deg, #1a3d2e 0%, #0f291e 100%);
+            border-right: 2px solid var(--gold);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 70px);
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+        }
+
+        .sidebar-section h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gold-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-toggle-icon {
+            display: none;
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-section h3 {
+                cursor: pointer;
+                margin-bottom: 0;
+            }
+
+            .section-toggle-icon {
+                display: block;
+            }
+
+            .sidebar-section.collapsed h3 {
+                border-bottom: none;
+            }
+
+            .sidebar-section.collapsed .section-content {
+                display: none;
+            }
+
+            .sidebar-section.collapsed .section-toggle-icon {
+                transform: rotate(-90deg);
+            }
+        }
+
+        /* Data Input Section */
+        .input-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-tab {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--gold-dark);
+            background: transparent;
+            color: var(--gold);
+            cursor: pointer;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .input-tab:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .input-tab.active {
+            background: var(--gold);
+            color: #1a3d2e;
+            border-color: var(--gold);
+            font-weight: 600;
+        }
+
+        .input-panel {
+            display: none;
+        }
+
+        .input-panel.active {
+            display: block;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed var(--gold-dark);
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--gold);
+        }
+
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .file-drop-zone p {
+            font-size: 0.85rem;
+            color: var(--gold);
+        }
+
+        .file-drop-zone p:last-child {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            color: var(--gold-dark);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .json-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0.75rem;
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.75rem;
+            resize: vertical;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-cream);
+        }
+
+        /* New Style for URL Input */
+        .url-input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-cream);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        .url-input::placeholder {
+            color: rgba(245, 240, 225, 0.5);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--gold);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: #1a3d2e;
+        }
+
+        .btn-primary:hover {
+            background: var(--gold-light);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.15);
+        }
+
+        /* Settings Section */
+        .setting-item {
+            margin-bottom: 0.75rem;
+        }
+
+        .setting-item label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+            color: var(--gold);
+        }
+
+        .setting-item input[type="checkbox"] {
+            margin-right: 0.5rem;
+            accent-color: var(--gold);
+        }
+
+        .setting-item input[type="number"] {
+            width: 70px;
+            padding: 0.4rem;
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--gold);
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        /* Download Section */
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .download-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .download-row .btn {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        /* Recipe List */
+        .recipe-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .recipe-list-item {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--gold-dark);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            color: var(--text-cream);
+        }
+
+        .recipe-list-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .recipe-list-item.active {
+            background: rgba(212, 175, 55, 0.2);
+            border-left: 3px solid var(--gold);
+            color: var(--gold);
+        }
+
+        .recipe-list-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: linear-gradient(135deg, #234b3a 0%, #1a3d2e 50%, #0f291e 100%);
+        }
+
+        /* Book Navigation */
+        .book-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--gold);
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+            color: var(--gold);
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--gold);
+            color: #1a3d2e;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 0.95rem;
+            color: var(--gold);
+            min-width: 100px;
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Recipe Page */
+        .recipe-page-container {
+            position: relative;
+            width: 595px;
+            height: 842px;
+            transform-origin: top center;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .recipe-page {
+            width: 595px;
+            height: 842px; /* Fixed A4 height */
+            background: url('Gemini_Generated_Image_ktmydbktmydbktmy.jpg');
+            background-size: cover;
+            background-position: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 25px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Ornate Border Frame - Hidden because the background has its own border */
+        .page-frame {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .page-frame svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Page Content */
+        .page-content {
+            position: relative;
+            z-index: 5;
+            padding: 25px 35px 80px 35px; /* Adjusted bottom padding */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .recipe-image-container {
+            width: 100%;
+            height: 180px; /* Reduced from 220px */
+            margin-bottom: 0.8rem;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+            border-radius: 8px; /* Added rounded corners */
+        }
+
+        .recipe-image-container:hover {
+            border-color: var(--gold);
+        }
+
+        .recipe-image-container::after {
+            content: "Click to change image";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--gold);
+            font-size: 0.8rem;
+            padding: 4px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .recipe-image-container:hover::after {
+            opacity: 1;
+        }
+
+        .recipe-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .recipe-image-placeholder {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold-dark);
+            font-size: 1.1rem;
+            font-style: italic;
+            border: 1px dashed var(--gold-dark);
+            border-radius: 8px; /* Added rounded corners */
+        }
+
+        .recipe-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem; /* Slightly reduced from 1.8rem */
+            font-weight: 600;
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 0.6rem;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; /* Slightly reduced from 1.1rem */
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 0.4rem;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            text-decoration-thickness: 1px;
+        }
+
+        .ingredients-section {
+            margin-bottom: 0.6rem;
+            flex-shrink: 0; /* Changed from 1 to 0 to prevent shrinking */
+        }
+
+        .ingredients-list {
+            list-style: none;
+            padding: 0;
+            color: var(--text-cream);
+        }
+
+        .ingredients-list.two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.1rem 1.5rem;
+        }
+
+        .ingredients-list li {
+            padding: 0.1rem 0;
+            font-size: 0.95rem; /* Increased from 0.85rem */
+            line-height: 1.2;
+            position: relative;
+            padding-left: 0.8rem;
+        }
+
+        .ingredients-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-size: 1rem; /* Increased from 0.9rem */
+        }
+
+        .instructions-section {
+            margin-bottom: 0.6rem;
+            flex-grow: 1;
+            overflow-y: auto; /* Allow scrolling if instructions are too long */
+            padding-right: 5px;
+        }
+
+        /* Custom scrollbar for instructions if needed */
+        .instructions-section::-webkit-scrollbar {
+            width: 4px;
+        }
+        .instructions-section::-webkit-scrollbar-thumb {
+            background: var(--gold-dark);
+            border-radius: 2px;
+        }
+
+        .instructions-list {
+            list-style: none;
+            padding: 0;
+            color: var(--text-cream);
+        }
+
+        .instructions-list li {
+            padding: 0.2rem 0;
+            font-size: 0.95rem; /* Increased from 0.85rem */
+            line-height: 1.3;
+            position: relative;
+            padding-left: 0.8rem;
+        }
+
+        .instructions-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-size: 1rem; /* Increased from 0.9rem */
+        }
+
+        .recipe-meta {
+            margin-top: auto;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--gold-dark);
+            flex-shrink: 0;
+        }
+
+        .meta-item {
+            margin-bottom: 0.2rem;
+            display: inline-block;
+            margin-right: 1.5rem;
+        }
+
+        .meta-label {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            color: var(--gold);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-decoration-thickness: 1px;
+            display: inline;
+        }
+
+        .meta-value {
+            font-size: 0.9rem;
+            color: var(--text-cream);
+            display: inline;
+        }
+
+        .page-number-container {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+        }
+
+        .page-number-badge {
+            width: 46px;
+            height: 46px;
+            background: #2d4a3e;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gold);
+            padding-bottom: 4px; /* Shift text slightly upward */
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar, .header, .book-nav {
+                display: none !important;
+            }
+            
+            .content-area {
+                padding: 0;
+                background: white;
+            }
+            
+            .recipe-page {
+                box-shadow: none;
+                page-break-after: always;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* Hidden pages for batch download */
+        .hidden-pages {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+        }
+
+        .hidden-page {
+            width: 595px;
+            height: 842px;
+            background: url('Gemini_Generated_Image_ktmydbktmydbktmy.jpg');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            padding: 25px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-green);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 41, 30, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .developer-credit {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            color: var(--gold);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 1000;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--gold-dark);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Schema Hint */
+        .schema-hint {
+            margin-top: 1rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--gold-dark);
+            border-radius: 4px;
+            padding: 0.8rem;
+        }
+
+        .schema-hint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .schema-hint-title {
+            font-size: 0.75rem;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--gold-dark);
+            color: var(--gold);
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .copy-btn:hover {
+            background: var(--gold);
+            color: #1a3d2e;
+        }
+
+        .schema-code {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.65rem;
+            color: var(--text-cream);
+            white-space: pre;
+            overflow-x: auto;
+            display: block;
+            max-height: 120px;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                border-right: none;
+                border-bottom: 2px solid var(--gold);
+                flex-shrink: 0;
+            }
+            
+            .content-area {
+                padding: 1rem 0.5rem;
+                overflow-x: hidden;
+            }
+
+            .recipe-page-container {
+                /* Scale the container to fit the viewport width */
+                transform: scale(calc(var(--mobile-scale, 1)));
+                margin-bottom: calc(842px * (var(--mobile-scale, 1) - 1));
+            }
+
+            .recipe-page {
+                /* Maintain fixed dimensions */
+                width: 595px !important;
+                height: 842px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>📖 Digital Recipe Cookbook</h1>
+        <div class="header-stats">
+            <span id="recipe-count">Recipes: 0</span>
+            <span id="page-count">Pages: 0</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 onclick="toggleSection(this)">Import Recipes <span class="section-toggle-icon">▾</span></h3>
+                <div class="section-content">
+                    <div class="input-tabs">
+                        <button class="input-tab active" onclick="switchTab('file')">File</button>
+                        <button class="input-tab" onclick="switchTab('paste')">Paste</button>
+                    </div>
+                    
+                    <div id="file-panel" class="input-panel active">
+                        <div class="file-drop-zone" id="drop-zone">
+                            <p>📁 Drop JSON files here<br>or click to browse</p>
+                            <p>Multiple files supported</p>
+                        </div>
+                        <input type="file" id="file-input" class="file-input" accept=".json" multiple>
+                    </div>
+                    
+                    <div id="paste-panel" class="input-panel">
+                        <textarea id="json-textarea" class="json-textarea" placeholder='{"recipes": [{"title": "Recipe Name", "ingredients": [], "steps": [], "cookTimeMinutes": 0, "totalTimeMinutes": 0, "servings": "", "imageUrl": ""}]}'></textarea>
+                        <button class="btn btn-primary" onclick="loadFromTextarea()">Load Recipes</button>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gold-dark);">
+                        <label style="display: block; color: var(--gold); font-size: 0.85rem; margin-bottom: 0.5rem;">Update Current Recipe Image</label>
+                        <input type="text" id="image-url-input" class="url-input" placeholder="https://example.com/image.jpg">
+                        <button class="btn btn-secondary" onclick="applyImageUrl()">Apply Image URL</button>
+                    </div>
+
+                    <div class="schema-hint">
+                        <div class="schema-hint-header">
+                            <span class="schema-hint-title">Accepted JSON Format</span>
+                            <button class="copy-btn" onclick="copySchema()">Copy</button>
+                        </div>
+                        <code class="schema-code" id="schema-code">{
+  "recipes": [
+    {
+      "title": "Recipe Name",
+      "ingredients": ["Item 1", "Item 2"],
+      "steps": ["Step 1", "Step 2"],
+      "cookTimeMinutes": 10,
+      "totalTimeMinutes": 20,
+      "servings": "2",
+      "imageUrl": "optional_url"
+    }
+  ]
+}</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" id="recipe-list-section" style="display: none;">
+                <h3 onclick="toggleSection(this)">Recipe List <span class="section-toggle-icon">▾</span></h3>
+                <div class="section-content">
+                    <div class="recipe-list" id="recipe-list"></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section collapsed">
+                <h3 onclick="toggleSection(this)">Page Settings <span class="section-toggle-icon">▾</span></h3>
+                <div class="section-content">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="show-page-numbers" checked>
+                            Show page numbers
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Start numbering from:</label>
+                        <input type="number" id="start-page-number" value="1" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label>Page Background:</label>
+                        <input type="file" id="bg-upload" accept="image/*" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.3rem;">
+                        <button class="btn btn-secondary" onclick="resetBackground()" style="font-size: 0.7rem; padding: 0.3rem; margin-top: 0.3rem;">Reset Background</button>
+                    </div>
+                    <button class="btn btn-secondary" onclick="applySettings()">Apply Settings</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section collapsed">
+                <h3 onclick="toggleSection(this)">Download <span class="section-toggle-icon">▾</span></h3>
+                <div class="section-content">
+                    <div class="download-buttons">
+                        <div class="download-row">
+                            <button class="btn btn-secondary" onclick="downloadCurrentPage('pdf')">PDF</button>
+                            <button class="btn btn-secondary" onclick="downloadCurrentPage('png')">PNG</button>
+                        </div>
+                        <button class="btn btn-primary" onclick="downloadAllPages('pdf')">Download All as PDF</button>
+                        <button class="btn btn-primary" onclick="downloadAllPages('png')">Download All as PNG</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div class="book-nav" id="book-nav" style="display: none;">
+                <button class="nav-btn" id="prev-btn" onclick="goToPage(-1)">‹</button>
+                <span class="page-indicator" id="page-indicator">Page 1 of 1</span>
+                <button class="nav-btn" id="next-btn" onclick="goToPage(1)">›</button>
+            </div>
+
+            <div class="recipe-page-container" id="page-container">
+                <div class="recipe-page" id="current-page">
+                    <div class="page-frame">
+                        <svg viewBox="0 0 595 842" preserveAspectRatio="none">
+                            <rect x="10" y="10" width="575" height="822" fill="none" stroke="#d4af37" stroke-width="2"/>
+                            <rect x="18" y="18" width="559" height="806" fill="none" stroke="#b8960c" stroke-width="1"/>
+                            <path d="M10 40 Q10 10 40 10" fill="none" stroke="#d4af37" stroke-width="3"/>
+                            <path d="M555 10 Q585 10 585 40" fill="none" stroke="#d4af37" stroke-width="3"/>
+                            <path d="M585 802 Q585 832 555 832" fill="none" stroke="#d4af37" stroke-width="3"/>
+                            <path d="M40 832 Q10 832 10 802" fill="none" stroke="#d4af37" stroke-width="3"/>
+                            <path d="M10 150 Q5 160 10 170 Q15 180 10 190" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                            <path d="M585 150 Q590 160 585 170 Q580 180 585 190" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                            <path d="M10 650 Q5 660 10 670 Q15 680 10 690" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                            <path d="M585 650 Q590 660 585 670 Q580 680 585 690" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="recipe-image-container" id="recipe-image-container">
+                            <div class="recipe-image-placeholder">
+                                <span>Welcome to Your Digital Cookbook</span>
+                            </div>
+                        </div>
+                        
+                        <h2 class="recipe-title">Getting Started</h2>
+                        
+                        <div class="ingredients-section">
+                            <h3 class="section-title">Ingredients :</h3>
+                            <ul class="ingredients-list">
+                                <li>Import your recipes using the sidebar</li>
+                                <li>Upload JSON files or paste recipe data</li>
+                                <li>Browse recipes like a book</li>
+                                <li>Download individual pages or the entire cookbook</li>
+                            </ul>
+                        </div>
+
+                        <div class="instructions-section">
+                            <h3 class="section-title">Instructions :</h3>
+                            <ul class="instructions-list">
+                                <li>Recipes should be in a "recipes" array</li>
+                                <li>Each recipe needs: title, ingredients[], steps[]</li>
+                                <li>Optional: cookTimeMinutes, totalTimeMinutes, servings, imageUrl</li>
+                                <li>Multiple JSON files will be merged automatically</li>
+                            </ul>
+                        </div>
+
+                        <div class="recipe-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Ready to:</span>
+                                <span class="meta-value"> Cook!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="page-number-container" id="page-number-container">
+                        <div class="page-number-badge" id="page-number">1</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="hidden-pages" id="hidden-pages"></div>
+
+    <input type="file" id="recipe-image-upload" accept="image/*" style="display: none;">
+
+    <div class="toast" id="toast"></div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="developer-credit">
+        developed by usf MSLh
+    </div>
+
+    <script>
+        // State
+        let recipes = [];
+        let currentPageIndex = 0;
+        let showPageNumbers = true;
+        let startPageNumber = 1;
+        let customPageBackground = null;
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const recipeList = document.getElementById('recipe-list');
+        const recipeListSection = document.getElementById('recipe-list-section');
+        const bookNav = document.getElementById('book-nav');
+        const pageIndicator = document.getElementById('page-indicator');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const hiddenPages = document.getElementById('hidden-pages');
+        const bgUpload = document.getElementById('bg-upload');
+        const recipeImageUpload = document.getElementById('recipe-image-upload');
+        const recipeImageContainer = document.getElementById('recipe-image-container');
+        const recipePageContainer = document.querySelector('.recipe-page-container');
+
+        // Handle mobile scaling
+        function updateMobileScale() {
+            if (window.innerWidth <= 768) {
+                const availableWidth = window.innerWidth - 20; // 10px padding on each side
+                const scale = availableWidth / 595;
+                document.documentElement.style.setProperty('--mobile-scale', scale);
+            } else {
+                document.documentElement.style.setProperty('--mobile-scale', 1);
+            }
+        }
+
+        window.addEventListener('resize', updateMobileScale);
+        updateMobileScale();
+
+        // Event Listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Background Upload
+        bgUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    customPageBackground = event.target.result;
+                    applyBackground();
+                    showToast('Background updated');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function applyBackground() {
+            const defaultBg = "url('Gemini_Generated_Image_ktmydbktmydbktmy.jpg')";
+            const bg = customPageBackground ? `url(${customPageBackground})` : defaultBg;
+            document.querySelectorAll('.recipe-page, .hidden-page').forEach(page => {
+                page.style.backgroundImage = bg;
+            });
+        }
+
+        function resetBackground() {
+            customPageBackground = null;
+            bgUpload.value = '';
+            applyBackground();
+            showToast('Background reset to default');
+        }
+
+        // Recipe Image Upload (Local)
+        recipeImageContainer.addEventListener('click', () => {
+            if (recipes.length > 0) {
+                recipeImageUpload.click();
+            }
+        });
+
+        recipeImageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && recipes[currentPageIndex]) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    recipes[currentPageIndex].imageUrl = event.target.result;
+                    renderPage(currentPageIndex);
+                    showToast('Recipe image updated');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // NEW FUNCTION: Apply Image from URL
+        function applyImageUrl() {
+            const urlInput = document.getElementById('image-url-input');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showToast('Please enter an image URL', 'error');
+                return;
+            }
+
+            if (recipes.length === 0) {
+                showToast('No recipes loaded to apply image to', 'error');
+                return;
+            }
+
+            // Update current recipe
+            recipes[currentPageIndex].imageUrl = url;
+            
+            // Re-render
+            renderPage(currentPageIndex);
+            
+            // Feedback
+            showToast('Image URL applied to current recipe');
+            urlInput.value = ''; // Optional: clear input
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-panel').classList.add('active');
+        }
+
+        // Sidebar Collapsible
+        function toggleSection(header) {
+            if (window.innerWidth <= 768) {
+                const section = header.parentElement;
+                section.classList.toggle('collapsed');
+            }
+        }
+
+        // File Handling
+        function handleFiles(files) {
+            const jsonFiles = Array.from(files).filter(f => f.name.endsWith('.json'));
+            
+            if (jsonFiles.length === 0) {
+                showToast('Please select JSON files', 'error');
+                return;
+            }
+
+            showLoading(true);
+            const promises = jsonFiles.map(file => readFile(file));
+            
+            Promise.all(promises)
+                .then(results => {
+                    results.forEach(data => mergeRecipes(data));
+                    updateUI();
+                    showToast(`Loaded ${jsonFiles.length} file(s) with ${recipes.length} total recipes`);
+                })
+                .catch(err => {
+                    showToast('Error reading files: ' + err.message, 'error');
+                })
+                .finally(() => showLoading(false));
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        resolve(data);
+                    } catch (err) {
+                        reject(new Error(`Invalid JSON in ${file.name}`));
+                    }
+                };
+                reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+                reader.readAsText(file);
+            });
+        }
+
+        // Textarea Loading
+        function loadFromTextarea() {
+            const textarea = document.getElementById('json-textarea');
+            const text = textarea.value.trim();
+            
+            if (!text) {
+                showToast('Please paste JSON data', 'error');
+                return;
+            }
+
+            try {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    const objects = text.match(/\{[\s\S]*?\}(?=\s*\{|$)/g);
+                    if (objects) {
+                        const allRecipes = [];
+                        objects.forEach(obj => {
+                            try {
+                                const parsed = JSON.parse(obj);
+                                if (parsed.recipes) {
+                                    allRecipes.push(...parsed.recipes);
+                                }
+                            } catch (e) {}
+                        });
+                        data = { recipes: allRecipes };
+                    }
+                }
+
+                if (data && data.recipes) {
+                    mergeRecipes(data);
+                    updateUI();
+                    showToast(`Loaded ${data.recipes.length} recipes`);
+                    textarea.value = '';
+                } else {
+                    showToast('Invalid JSON format. Expected {recipes: []}', 'error');
+                }
+            } catch (err) {
+                showToast('Error parsing JSON: ' + err.message, 'error');
+            }
+        }
+
+        // Merge Recipes
+        function mergeRecipes(data) {
+            if (data.recipes && Array.isArray(data.recipes)) {
+                recipes.push(...data.recipes);
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('recipe-count').textContent = `Recipes: ${recipes.length}`;
+            document.getElementById('page-count').textContent = `Pages: ${recipes.length}`;
+
+            if (recipes.length > 0) {
+                recipeListSection.style.display = 'block';
+                bookNav.style.display = 'flex';
+                renderRecipeList();
+                renderPage(0);
+            }
+
+            updateNavButtons();
+        }
+
+        // Render Recipe List
+        function renderRecipeList() {
+            recipeList.innerHTML = '';
+            recipes.forEach((recipe, index) => {
+                const item = document.createElement('div');
+                item.className = 'recipe-list-item' + (index === currentPageIndex ? ' active' : '');
+                item.textContent = recipe.title || `Recipe ${index + 1}`;
+                item.onclick = () => {
+                    currentPageIndex = index;
+                    renderPage(index);
+                    renderRecipeList();
+                };
+                recipeList.appendChild(item);
+            });
+        }
+
+        // Render Page
+        function renderPage(index) {
+            if (recipes.length === 0) return;
+            
+            const recipe = recipes[index];
+            const actualPageNumber = startPageNumber + index;
+            const ingredients = recipe.ingredients || [];
+            const ingredientCount = ingredients.length;
+
+            // Dynamic Layout Adjustments
+            let ingredientsFontSize = '0.95rem';
+            let instructionsFontSize = '0.95rem';
+            let spacing = '0.6rem';
+            const imageSize = '180px'; // Fixed size as requested
+            
+            if (ingredientCount > 12) {
+                ingredientsFontSize = '0.8rem';
+                instructionsFontSize = '0.8rem';
+                spacing = '0.3rem';
+            } else if (ingredientCount > 8) {
+                ingredientsFontSize = '0.85rem';
+                spacing = '0.4rem';
+            }
+
+            // Image
+            const imageContainer = document.getElementById('recipe-image-container');
+            imageContainer.style.height = imageSize;
+            if (recipe.imageUrl) {
+                imageContainer.innerHTML = `<img src="${recipe.imageUrl}" alt="${recipe.title}" class="recipe-image" onerror="this.parentElement.innerHTML='<div class=\'recipe-image-placeholder\'><span>Image not found</span></div>'">`;
+            } else {
+                imageContainer.innerHTML = '<div class="recipe-image-placeholder"><span>Click to add image</span></div>';
+            }
+
+            // Title
+            const titleEl = document.querySelector('.recipe-title');
+            titleEl.textContent = recipe.title || 'Untitled Recipe';
+            titleEl.style.marginBottom = spacing;
+            
+            // Ingredients
+            const ingredientsSection = document.querySelector('.ingredients-section');
+            ingredientsSection.style.marginBottom = spacing;
+            
+            const twoColumn = ingredientCount > 6;
+            let ingredientsHTML = '<h3 class="section-title">Ingredients :</h3>';
+            ingredientsHTML += `<ul class="ingredients-list ${twoColumn ? 'two-column' : ''}" style="font-size: ${ingredientsFontSize}">`;
+            ingredients.forEach(ing => {
+                ingredientsHTML += `<li style="font-size: ${ingredientsFontSize}">${escapeHtml(ing)}</li>`;
+            });
+            ingredientsHTML += '</ul>';
+            ingredientsSection.innerHTML = ingredientsHTML;
+
+            // Instructions
+            const instructionsSection = document.querySelector('.instructions-section');
+            instructionsSection.style.marginBottom = spacing;
+            const steps = recipe.steps || [];
+            
+            let instructionsHTML = '<h3 class="section-title">Instructions :</h3>';
+            instructionsHTML += `<ul class="instructions-list" style="font-size: ${instructionsFontSize}">`;
+            steps.forEach(step => {
+                instructionsHTML += `<li style="font-size: ${instructionsFontSize}">${escapeHtml(step)}</li>`;
+            });
+            instructionsHTML += '</ul>';
+            instructionsSection.innerHTML = instructionsHTML;
+
+            // Metadata
+            const metaContainer = document.querySelector('.recipe-meta');
+            let metaHTML = '';
+            if (recipe.cookTimeMinutes !== undefined) {
+                metaHTML += `<div class="meta-item"><span class="meta-label">Cook Time:</span><span class="meta-value"> ${recipe.cookTimeMinutes} mins</span></div>`;
+            }
+            if (recipe.totalTimeMinutes !== undefined) {
+                metaHTML += `<div class="meta-item"><span class="meta-label">Total Time:</span><span class="meta-value"> ${recipe.totalTimeMinutes} mins</span></div>`;
+            }
+            if (recipe.servings) {
+                metaHTML += `<div class="meta-item"><span class="meta-label">Servings:</span><span class="meta-value"> ${recipe.servings}</span></div>`;
+            }
+            metaContainer.innerHTML = metaHTML || '<div class="meta-item"><span class="meta-label">Ready to:</span><span class="meta-value"> Cook!</span></div>';
+
+            // Page Number
+            const pageNumContainer = document.getElementById('page-number-container');
+            const pageNumEl = document.getElementById('page-number');
+            pageNumEl.textContent = actualPageNumber;
+            pageNumContainer.style.display = showPageNumbers ? 'block' : 'none';
+
+            // Update indicator
+            pageIndicator.textContent = `Page ${index + 1} of ${recipes.length}`;
+            updateNavButtons();
+            
+            // Apply background if custom
+            if (customPageBackground) applyBackground();
+        }
+
+        // Navigation
+        function goToPage(direction) {
+            const newIndex = currentPageIndex + direction;
+            if (newIndex >= 0 && newIndex < recipes.length) {
+                currentPageIndex = newIndex;
+                renderPage(newIndex);
+                renderRecipeList();
+            }
+        }
+
+        function updateNavButtons() {
+            prevBtn.disabled = currentPageIndex === 0;
+            nextBtn.disabled = currentPageIndex === recipes.length - 1;
+        }
+
+        // Settings
+        function applySettings() {
+            showPageNumbers = document.getElementById('show-page-numbers').checked;
+            startPageNumber = parseInt(document.getElementById('start-page-number').value) || 1;
+            renderPage(currentPageIndex);
+            showToast('Settings applied');
+        }
+
+        // Download Functions
+        async function downloadCurrentPage(format) {
+            if (recipes.length === 0) {
+                showToast('No recipes to download', 'error');
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                // Create a temporary hidden page for perfect A4 capture
+                const recipe = recipes[currentPageIndex];
+                const tempPage = createPageElement(recipe, currentPageIndex);
+                hiddenPages.appendChild(tempPage);
+                
+                await waitForImages(tempPage);
+                
+                const filename = sanitizeFilename(recipe.title || `recipe-${currentPageIndex + 1}`);
+
+                if (format === 'pdf') {
+                    await downloadAsPDF(tempPage, filename);
+                } else {
+                    await downloadAsPNG(tempPage, filename);
+                }
+                
+                showToast(`Downloaded ${filename}.${format}`);
+                hiddenPages.removeChild(tempPage);
+            } catch (err) {
+                showToast('Download failed: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function downloadAllPages(format) {
+            if (recipes.length === 0) {
+                showToast('No recipes to download', 'error');
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                hiddenPages.innerHTML = '';
+                
+                recipes.forEach((recipe, index) => {
+                    const pageEl = createPageElement(recipe, index);
+                    hiddenPages.appendChild(pageEl);
+                });
+
+                await waitForImages(hiddenPages);
+
+                if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'pt', 'a4');
+                    const pageWidth = 595;
+                    const pageHeight = 842;
+
+                    for (let i = 0; i < recipes.length; i++) {
+                        const pageEl = hiddenPages.children[i];
+                        const canvas = await html2canvas(pageEl, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: null,
+                            width: 595,
+                            height: 842,
+                            windowWidth: 595,
+                            windowHeight: 842
+                        });
+
+                        const imgData = canvas.toDataURL('image/png');
+                        
+                        if (i > 0) {
+                            pdf.addPage();
+                        }
+                        
+                        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+                    }
+
+                    pdf.save('recipe-cookbook.pdf');
+                } else {
+                    for (let i = 0; i < recipes.length; i++) {
+                        const pageEl = hiddenPages.children[i];
+                        const recipe = recipes[i];
+                        const filename = sanitizeFilename(recipe.title || `recipe-${i + 1}`);
+                        
+                        const canvas = await html2canvas(pageEl, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: null,
+                            width: 595,
+                            height: 842,
+                            windowWidth: 595,
+                            windowHeight: 842
+                        });
+
+                        const link = document.createElement('a');
+                        link.download = `${filename}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                }
+                
+                showToast(`Downloaded all ${recipes.length} recipes as ${format.toUpperCase()}`);
+            } catch (err) {
+                showToast('Download failed: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+                hiddenPages.innerHTML = '';
+            }
+        }
+
+        function createPageElement(recipe, index) {
+            const div = document.createElement('div');
+            div.className = 'hidden-page';
+            
+            if (customPageBackground) {
+                div.style.backgroundImage = `url(${customPageBackground})`;
+            } else {
+                div.style.backgroundImage = "url('Gemini_Generated_Image_ktmydbktmydbktmy.jpg')";
+            }
+            
+            const actualPageNumber = startPageNumber + index;
+            const ingredients = recipe.ingredients || [];
+            const ingredientCount = ingredients.length;
+            const steps = recipe.steps || [];
+
+            // Dynamic Layout Adjustments
+            let ingredientsFontSize = '0.95rem';
+            let instructionsFontSize = '0.95rem';
+            let spacing = '0.6rem';
+            const imageSize = '180px'; // Fixed size as requested
+            
+            if (ingredientCount > 12) {
+                ingredientsFontSize = '0.8rem';
+                instructionsFontSize = '0.8rem';
+                spacing = '0.3rem';
+            } else if (ingredientCount > 8) {
+                ingredientsFontSize = '0.85rem';
+                spacing = '0.4rem';
+            }
+
+            const twoColumn = ingredientCount > 6;
+            const hasImage = recipe.imageUrl ? true : false;
+
+            div.innerHTML = `
+                <div class="page-frame">
+                    <svg viewBox="0 0 595 842" preserveAspectRatio="none">
+                        <rect x="10" y="10" width="575" height="822" fill="none" stroke="#d4af37" stroke-width="2"/>
+                        <rect x="18" y="18" width="559" height="806" fill="none" stroke="#b8960c" stroke-width="1"/>
+                        <path d="M10 40 Q10 10 40 10" fill="none" stroke="#d4af37" stroke-width="3"/>
+                        <path d="M555 10 Q585 10 585 40" fill="none" stroke="#d4af37" stroke-width="3"/>
+                        <path d="M585 802 Q585 832 555 832" fill="none" stroke="#d4af37" stroke-width="3"/>
+                        <path d="M40 832 Q10 832 10 802" fill="none" stroke="#d4af37" stroke-width="3"/>
+                        <path d="M10 150 Q5 160 10 170 Q15 180 10 190" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                        <path d="M585 150 Q590 160 585 170 Q580 180 585 190" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                        <path d="M10 650 Q5 660 10 670 Q15 680 10 690" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                        <path d="M585 650 Q590 660 585 670 Q580 680 585 690" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+                    </svg>
+                </div>
+                <div class="page-content">
+                    <div class="recipe-image-container" style="height: ${imageSize}">
+                        ${hasImage ? `<img src="${recipe.imageUrl}" alt="${recipe.title}" class="recipe-image" onerror="this.parentElement.innerHTML='<div class=\'recipe-image-placeholder\'><span>Image not found</span></div>'">` : '<div class="recipe-image-placeholder"><span>No image</span></div>'}
+                    </div>
+                    <h2 class="recipe-title" style="margin-bottom: ${spacing}">${escapeHtml(recipe.title || 'Untitled Recipe')}</h2>
+                    
+                    <div class="ingredients-section" style="margin-bottom: ${spacing}">
+                        <h3 class="section-title">Ingredients :</h3>
+                        <ul class="ingredients-list ${twoColumn ? 'two-column' : ''}" style="font-size: ${ingredientsFontSize}">
+                            ${ingredients.map(ing => `<li style="font-size: ${ingredientsFontSize}">${escapeHtml(ing)}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="instructions-section" style="margin-bottom: ${spacing}">
+                        <h3 class="section-title">Instructions :</h3>
+                        <ul class="instructions-list" style="font-size: ${instructionsFontSize}">
+                            ${steps.map(step => `<li style="font-size: ${instructionsFontSize}">${escapeHtml(step)}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe-meta">
+                        ${recipe.cookTimeMinutes !== undefined ? `<div class="meta-item"><span class="meta-label">Cook Time:</span><span class="meta-value"> ${recipe.cookTimeMinutes} mins</span></div>` : ''}
+                        ${recipe.totalTimeMinutes !== undefined ? `<div class="meta-item"><span class="meta-label">Total Time:</span><span class="meta-value"> ${recipe.totalTimeMinutes} mins</span></div>` : ''}
+                        ${recipe.servings ? `<div class="meta-item"><span class="meta-label">Servings:</span><span class="meta-value"> ${recipe.servings}</span></div>` : ''}
+                        ${!recipe.cookTimeMinutes && !recipe.totalTimeMinutes && !recipe.servings ? '<div class="meta-item"><span class="meta-label">Ready to:</span><span class="meta-value"> Cook!</span></div>' : ''}
+                    </div>
+                </div>
+                ${showPageNumbers ? `
+                <div class="page-number-container">
+                    <div class="page-number-badge">${actualPageNumber}</div>
+                </div>` : ''}
+            `;
+            
+            return div;
+        }
+
+        async function downloadAsPDF(element, filename) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'pt', 'a4');
+            
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                width: 595,
+                height: 842,
+                windowWidth: 595,
+                windowHeight: 842
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pageWidth = 595;
+            const pageHeight = 842;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+            pdf.save(`${filename}.pdf`);
+        }
+
+        async function downloadAsPNG(element, filename) {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                width: 595,
+                height: 842,
+                windowWidth: 595,
+                windowHeight: 842
+            });
+
+            const link = document.createElement('a');
+            link.download = `${filename}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function waitForImages(container) {
+            return new Promise((resolve) => {
+                const images = container.querySelectorAll('img');
+                let loaded = 0;
+                
+                if (images.length === 0) {
+                    resolve();
+                    return;
+                }
+
+                images.forEach(img => {
+                    if (img.complete) {
+                        loaded++;
+                    } else {
+                        img.onload = () => {
+                            loaded++;
+                            if (loaded === images.length) resolve();
+                        };
+                        img.onerror = () => {
+                            loaded++;
+                            if (loaded === images.length) resolve();
+                        };
+                    }
+                });
+
+                if (loaded === images.length) resolve();
+            });
+        }
+
+        // Utilities
+        function copySchema() {
+            const schemaCode = document.getElementById('schema-code').textContent;
+            navigator.clipboard.writeText(schemaCode).then(() => {
+                showToast('JSON schema copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showToast('Failed to copy schema');
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function sanitizeFilename(name) {
+            return name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading-overlay').classList.toggle('show', show);
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (recipes.length === 0) return;
+            
+            if (e.key === 'ArrowLeft') {
+                goToPage(-1);
+            } else if (e.key === 'ArrowRight') {
+                goToPage(1);
+            }
+        });
+    </script>
+</body>
+</html>
